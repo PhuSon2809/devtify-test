@@ -1,12 +1,10 @@
-Welcome to your new TanStack app! 
-
 # Getting Started
 
 To run this application:
 
 ```bash
-yarn install
-yarn run start
+yarn
+yarn run dev
 ```
 
 # Building For Production
@@ -25,14 +23,118 @@ This project uses [Vitest](https://vitest.dev/) for testing. You can run the tes
 yarn run test
 ```
 
+# Devtify – Data Table Demo
+
+Một mini-project trình diễn **bảng dữ liệu có hiệu năng tốt** với trải nghiệm thân thiện: header dính (sticky), lọc & tìm kiếm, sắp xếp, vô hạn (infinite scroll), xem chi tiết (Sheet/Dialog) và **xuất CSV** theo lô (có tiến độ & hủy).
+
+> Tech chính: **React + TypeScript + Tailwind + shadcn/ui + lucide-react**.  
+> Kiến trúc tách rời `DataTable` / `Toolbar` / `DetailSheet` / hooks dùng lại.
+
+---
+
+## ✨ Tính năng chính
+
+- **Sticky header** và **sticky cột #** (nếu dùng cột đánh số).
+- **Sortable** theo từng cột (mặc định có `defaultCompare`, có thể custom `compare/getValue`).
+- **Search** không phân biệt hoa thường, bỏ dấu (`normalize`) trên nhiều field (id, name, language, bio...).
+- **Filter theo Status** ngay trên **Toolbar** (Dropdown).
+- **Infinite scroll** với `IntersectionObserver` (hook `useInfiniteScroll`) + sentinel cuối bảng.
+- **DetailSheet**: bấm 1 dòng để xem chi tiết gọn gàng ở panel bên phải.
+- **Export CSV**: cơ chế build **theo lô (chunk)**, có `progress`, `cancel`, hỗ trợ **15.000+ rows** mượt mà.
+- **Responsive layout**: `100dvh` + `flex-1 min-h-0`, bảng tự chiếm toàn bộ chiều cao còn lại dưới Toolbar.
+
+---
+
+## 🧱 Cấu trúc chính
+
+```
+src/
+  components/
+    feature/
+      data-table.tsx        # <table> thuần, sticky header, sticky cột#, zebra row
+      toolbar.tsx          # Search + Status filter + Export CSV + Density toggle
+      detail-sheet.tsx      # Panel chi tiết (shadcn Sheet)
+  model/
+    index.ts               # InforModelMerge, StatusEnum, ...
+  services/
+    infor/infor.service.ts # nguồn dữ liệu (mock/api)
+    react-query.ts         # createQueryOptions...
+  shared/
+    hooks/
+      useGetAllDummyData.ts     # lấy data + sinh status, createAt (dummy)
+      useInfiniteScroll.ts      # observer cho infinite scroll
+      useHandleDownloadInfos.ts # build CSV theo lô (progress/cancel)
+    utils/
+      index.ts              # normalize, STATUS_LABEL, wait, cn...
+```
+
+## 🧰 Sử dụng nhanh
+
+### 1) `Home.tsx` (ví dụ tích hợp)
+
+```tsx
+import { DataTable, DetailSheet, StatusBadge, Toolbar } from '@/components/feature'
+import { useGetAllDummyData, useInfiniteScroll } from '@/shared/hooks'
+import { normalize, STATUS_LABEL, wait } from '@/shared/utils'
+
+const buildSearchText = (r) => [r.id, r.name, r.language, r.bio].map(normalize).join(' | ')
+```
+
+### 2) `DataTable` – Props chính
+
+```ts
+type Column = {
+  key: string
+  label: React.ReactNode
+  width?: number
+  sortable?: boolean
+  render?: (row: any, rowIdx?: number) => React.ReactNode
+  getValue?: (row: any) => unknown
+  compare?: (a: any, b: any) => number
+}
+
+interface DataTableProps {
+  columns: Column[]
+  rows: any[]
+  isLoading?: boolean
+  triggerRef?: React.RefObject<HTMLDivElement | null>
+  onRowClick?: (row: any, idx: number) => void
+  rowSize?: 'comfortable' | 'compact'
+  selectedRowId?: string | null
+  fillParent?: boolean
+  loadingMore?: boolean
+}
+```
+
+### 3) `Toolbar` – Search, Filter, Export CSV, Density
+
+`Toolbar` nhận `infos`, `onSearch`, `status`, `onStatusChange`, `rowSize`, `onRowSizeChange`.
+
+### 4) `DetailSheet` – xem chi tiết
+
+`DetailSheet` mở khi click dòng, truyền `data={selected}`.
+
+---
+
+## 🧪 Dữ liệu mẫu & định danh
+
+`useGetAllDummyData()` sinh status ngẫu nhiên + createAt; có thể tạo id từ 2 gốc và thêm chỉ số base36 để không trùng:
+
+```ts
+id: `${info.id}_${info.version ?? ''}_${i.toString(36)}`
+```
+
+## ⚙️ Hiệu năng & Quy ước
+
+- 15k rows: **filter trước, slice sau**; `hasMore` dựa danh sách đã lọc; đổi query/status thì **reset limit**.
+- CSV: build **theo lô** (1000 dòng), có `progress` & `cancel`.
+
 ## Styling
 
 This project uses [Tailwind CSS](https://tailwindcss.com/) for styling.
 
-
-
-
 ## Routing
+
 This project uses [TanStack Router](https://tanstack.com/router). The initial setup is a file based router. Which means that the routes are managed as files in `src/routes`.
 
 ### Adding A Route
@@ -48,7 +150,7 @@ Now that you have two routes you can use a `Link` component to navigate between 
 To use SPA (Single Page Application) navigation you will need to import the `Link` component from `@tanstack/react-router`.
 
 ```tsx
-import { Link } from "@tanstack/react-router";
+import { Link } from '@tanstack/react-router'
 ```
 
 Then anywhere in your JSX you can use it like so:
@@ -71,7 +173,7 @@ Here is an example layout that includes a header:
 import { Outlet, createRootRoute } from '@tanstack/react-router'
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
 
-import { Link } from "@tanstack/react-router";
+import { Link } from '@tanstack/react-router'
 
 export const Route = createRootRoute({
   component: () => (
@@ -85,14 +187,13 @@ export const Route = createRootRoute({
       <Outlet />
       <TanStackRouterDevtools />
     </>
-  ),
+  )
 })
 ```
 
 The `<TanStackRouterDevtools />` component is not required so you can remove it if you don't want it in your layout.
 
 More information on layouts can be found in the [Layouts documentation](https://tanstack.com/router/latest/docs/framework/react/guide/routing-concepts#layouts).
-
 
 ## Data Fetching
 
@@ -103,26 +204,26 @@ For example:
 ```tsx
 const peopleRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: "/people",
+  path: '/people',
   loader: async () => {
-    const response = await fetch("https://swapi.dev/api/people");
+    const response = await fetch('https://swapi.dev/api/people')
     return response.json() as Promise<{
       results: {
-        name: string;
-      }[];
-    }>;
+        name: string
+      }[]
+    }>
   },
   component: () => {
-    const data = peopleRoute.useLoaderData();
+    const data = peopleRoute.useLoaderData()
     return (
       <ul>
         {data.results.map((person) => (
           <li key={person.name}>{person.name}</li>
         ))}
       </ul>
-    );
-  },
-});
+    )
+  }
+})
 ```
 
 Loaders simplify your data fetching logic dramatically. Check out more information in the [Loader documentation](https://tanstack.com/router/latest/docs/framework/react/guide/data-loading#loader-parameters).
@@ -140,29 +241,29 @@ yarn add @tanstack/react-query @tanstack/react-query-devtools
 Next we'll need to create a query client and provider. We recommend putting those in `main.tsx`.
 
 ```tsx
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 // ...
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient()
 
 // ...
 
 if (!rootElement.innerHTML) {
-  const root = ReactDOM.createRoot(rootElement);
+  const root = ReactDOM.createRoot(rootElement)
 
   root.render(
     <QueryClientProvider client={queryClient}>
       <RouterProvider router={router} />
     </QueryClientProvider>
-  );
+  )
 }
 ```
 
 You can also add TanStack Query Devtools to the root route (optional).
 
 ```tsx
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 
 const rootRoute = createRootRoute({
   component: () => (
@@ -171,26 +272,26 @@ const rootRoute = createRootRoute({
       <ReactQueryDevtools buttonPosition="top-right" />
       <TanStackRouterDevtools />
     </>
-  ),
-});
+  )
+})
 ```
 
 Now you can use `useQuery` to fetch your data.
 
 ```tsx
-import { useQuery } from "@tanstack/react-query";
+import { useQuery } from '@tanstack/react-query'
 
-import "./App.css";
+import './App.css'
 
 function App() {
   const { data } = useQuery({
-    queryKey: ["people"],
+    queryKey: ['people'],
     queryFn: () =>
-      fetch("https://swapi.dev/api/people")
+      fetch('https://swapi.dev/api/people')
         .then((res) => res.json())
         .then((data) => data.results as { name: string }[]),
-    initialData: [],
-  });
+    initialData: []
+  })
 
   return (
     <div>
@@ -200,10 +301,10 @@ function App() {
         ))}
       </ul>
     </div>
-  );
+  )
 }
 
-export default App;
+export default App
 ```
 
 You can find out everything you need to know on how to use React-Query in the [React-Query documentation](https://tanstack.com/query/latest/docs/framework/react/overview).
@@ -221,24 +322,22 @@ yarn add @tanstack/store
 Now let's create a simple counter in the `src/App.tsx` file as a demonstration.
 
 ```tsx
-import { useStore } from "@tanstack/react-store";
-import { Store } from "@tanstack/store";
-import "./App.css";
+import { useStore } from '@tanstack/react-store'
+import { Store } from '@tanstack/store'
+import './App.css'
 
-const countStore = new Store(0);
+const countStore = new Store(0)
 
 function App() {
-  const count = useStore(countStore);
+  const count = useStore(countStore)
   return (
     <div>
-      <button onClick={() => countStore.setState((n) => n + 1)}>
-        Increment - {count}
-      </button>
+      <button onClick={() => countStore.setState((n) => n + 1)}>Increment - {count}</button>
     </div>
-  );
+  )
 }
 
-export default App;
+export default App
 ```
 
 One of the many nice features of TanStack Store is the ability to derive state from other state. That derived state will update when the base state updates.
@@ -246,33 +345,31 @@ One of the many nice features of TanStack Store is the ability to derive state f
 Let's check this out by doubling the count using derived state.
 
 ```tsx
-import { useStore } from "@tanstack/react-store";
-import { Store, Derived } from "@tanstack/store";
-import "./App.css";
+import { useStore } from '@tanstack/react-store'
+import { Store, Derived } from '@tanstack/store'
+import './App.css'
 
-const countStore = new Store(0);
+const countStore = new Store(0)
 
 const doubledStore = new Derived({
   fn: () => countStore.state * 2,
-  deps: [countStore],
-});
-doubledStore.mount();
+  deps: [countStore]
+})
+doubledStore.mount()
 
 function App() {
-  const count = useStore(countStore);
-  const doubledCount = useStore(doubledStore);
+  const count = useStore(countStore)
+  const doubledCount = useStore(doubledStore)
 
   return (
     <div>
-      <button onClick={() => countStore.setState((n) => n + 1)}>
-        Increment - {count}
-      </button>
+      <button onClick={() => countStore.setState((n) => n + 1)}>Increment - {count}</button>
       <div>Doubled - {doubledCount}</div>
     </div>
-  );
+  )
 }
 
-export default App;
+export default App
 ```
 
 We use the `Derived` class to create a new store that is derived from another store. The `Derived` class has a `mount` method that will start the derived store updating.
