@@ -1,1 +1,1 @@
-export const configs = {}
+export { config } from './config'

@@ -1,28 +1,39 @@
-import { StrictMode } from 'react'
+import { RouterProvider, createHashHistory, createRouter } from '@tanstack/react-router'
 import ReactDOM from 'react-dom/client'
-import { RouterProvider, createRouter } from '@tanstack/react-router'
 
 // Import the generated route tree
 import { routeTree } from './routeTree.gen'
 
-import './styles.css'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import type { RouterContext } from './types/router-context.ts'
 import reportWebVitals from './reportWebVitals.ts'
+import './styles.css'
 
 // Create a new router instance
 const router = createRouter({
   routeTree,
-  context: {},
+  context: {
+    queryClient: undefined!
+  },
   defaultPreload: 'intent',
   scrollRestoration: true,
   defaultStructuralSharing: true,
   defaultPreloadStaleTime: 0,
+  history: createHashHistory()
 })
 
 // Register the router instance for type safety
 declare module '@tanstack/react-router' {
   interface Register {
     router: typeof router
+    context: RouterContext
   }
+}
+
+const queryClient = new QueryClient()
+
+function App() {
+  return <RouterProvider router={router} context={{ queryClient }} />
 }
 
 // Render the app
@@ -30,9 +41,9 @@ const rootElement = document.getElementById('app')
 if (rootElement && !rootElement.innerHTML) {
   const root = ReactDOM.createRoot(rootElement)
   root.render(
-    <StrictMode>
-      <RouterProvider router={router} />
-    </StrictMode>,
+    <QueryClientProvider client={queryClient}>
+      <App />
+    </QueryClientProvider>
   )
 }
 
